@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SoundBites</title>
+<meta name="description" content="Sound you can touch: playable instruments and hands-on music lessons that run in your browser, by Nelu Radpour.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Geist+Mono:wght@400;500&family=Fraunces:ital,opsz,wght,SOFT,WONK@1,9..144,100..900,0..100,0..1&family=Homemade+Apple&family=Permanent+Marker&display=swap">
+<style>
+  /* Layout: a hero of strings you can strum, a short about, then the big-type index (same family as VisualStims, in the instruments' cream and ink). */
+  :root{
+    --page:#efe6d8;
+    --page2:#e3d6c4;
+    --ink:#2f2622;
+    --soft:#5e5048;
+    --dim:#8a7a6e;
+    --rule:#2f262226;
+    --hot:#c8643c;
+    --gold:#c99a3e;
+    --grot:"Bricolage Grotesque","Helvetica Neue",Arial,system-ui,sans-serif;
+    --mono:"Geist Mono",ui-monospace,Menlo,monospace;
+    color-scheme:light;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--page);color:var(--ink)}
+  body{font-family:var(--grot);font-variation-settings:"opsz" 18;line-height:1.35;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .gut{padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+
+  header{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding-block:22px;pointer-events:none}
+  header a{pointer-events:auto}
+  .mark{display:flex;align-items:center;gap:12px;text-decoration:none;font-weight:400;font-size:15px;letter-spacing:.2em;text-transform:uppercase}
+  .mark svg{width:46px;height:26px;overflow:visible}
+  nav.links{display:flex;gap:30px;font-size:16px;text-transform:lowercase}
+  nav.links a{text-decoration:none;opacity:.85}
+  nav.links a:hover{opacity:1;text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:1px}
+
+  .hero{position:relative;height:100vh;height:100svh;display:flex;align-items:flex-end;padding-block:0 9vh;background:radial-gradient(120% 90% at 50% 40%,var(--page) 0%,var(--page2) 100%);overflow:hidden}
+  #strings{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:pan-y;cursor:crosshair}
+  .hero h1{position:relative;margin:0;font-weight:340;font-size:clamp(46px,6.6vw,104px);line-height:.98;pointer-events:none}
+  .hero h1 .script{display:block;font-family:"Homemade Apple","Snell Roundhand","Segoe Script",cursive;font-weight:400;font-size:.95em;line-height:1.5;padding-left:.32em}
+  .hero h1 .rest{display:block;font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:300;font-size:1.32em;line-height:1.05;letter-spacing:.015em;font-variation-settings:"opsz" 144,"SOFT" 100,"WONK" 1;padding-left:.5em}
+  .hero h1 .rest .ch{display:inline-block;color:color-mix(in oklab,var(--ink),var(--hot) calc(var(--i)*7%));animation:hum 2.4s ease-in-out infinite;animation-delay:calc(var(--i) * -.17s)}
+  .hero h1 .rest .w{white-space:nowrap}
+  @keyframes hum{0%,100%{transform:translateY(.12em)}50%{transform:translateY(-.14em)}}
+  .hint{position:absolute;right:max(28px,env(safe-area-inset-right,0px));bottom:9vh;font:12px var(--mono);color:var(--dim);letter-spacing:.06em;pointer-events:none;transition:opacity .6s}
+  @media (prefers-reduced-motion: reduce){.hero h1 .rest .ch{animation:none}}
+
+  .about{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:48px;align-items:start;padding-block:12vh 10vh}
+  .about h2{margin:0 0 34px;font-family:"Permanent Marker","Marker Felt","Comic Sans MS",cursive;font-weight:400;font-size:clamp(30px,3.1vw,46px);line-height:1.18;text-wrap:balance}
+  .about p{margin:0 0 18px;font-size:clamp(17px,1.35vw,20px);line-height:1.32;max-width:36em;color:var(--soft)}
+  .about p a{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
+  .wave{width:100%;height:auto;color:var(--hot)}
+
+  .index{padding-block:2vh 5vh}
+  .index .lab{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+  .touch .row .n{border-style:dashed}
+  .row{display:grid;grid-template-columns:4.6em minmax(0,1fr);align-items:center;gap:16px;border-top:1px solid var(--rule);padding-block:18px 22px;text-decoration:none;position:relative}
+  .row:last-child{border-bottom:1px solid var(--rule)}
+  .row .n{justify-self:start;font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:400;font-variation-settings:"opsz" 72,"SOFT" 100,"WONK" 1;font-size:clamp(20px,2vw,28px);line-height:1;color:var(--hot);width:1.9em;height:1.9em;display:grid;place-items:center;border:1.5px solid currentColor;border-radius:58% 42% 51% 49%/46% 55% 45% 54%;animation:nwob 7s ease-in-out infinite;animation-delay:var(--nd,0s)}
+  @keyframes nwob{0%,100%{border-radius:58% 42% 51% 49%/46% 55% 45% 54%;transform:rotate(var(--nr,-8deg))}50%{border-radius:44% 56% 47% 53%/56% 44% 57% 43%;transform:rotate(calc(var(--nr,-8deg) * -1))}}
+  .row:nth-child(3n) .n{--nr:7deg;--nd:-2s} .row:nth-child(3n+1) .n{--nr:-11deg;--nd:-4.5s}
+  .row .t{color:color-mix(in oklab,var(--ink) 70%,var(--page));font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:300;font-variation-settings:"opsz" 144,"SOFT" 100,"WONK" 1;font-size:clamp(40px,7vw,112px);line-height:1.05;white-space:nowrap;transition:transform .35s ease,color .35s ease}
+  .row .t .c{display:inline-block;will-change:transform}
+  a.row:hover .t,a.row:focus-visible .t{transform:translateX(.12em);color:var(--hot)}
+  a.row:focus-visible{outline:none}
+  .row .d{grid-column:2;font:13px/1.4 var(--mono);color:var(--dim);margin-top:-4px}
+  .row .mobile-pic{display:none}
+  #peek{position:fixed;left:0;top:0;width:320px;aspect-ratio:3/2;max-width:40vw;pointer-events:none;z-index:20;opacity:0;transform:translate(-50%,-50%) scale(.85) rotate(-3deg);transition:opacity .25s ease,transform .25s ease;border-radius:4px;overflow:hidden;box-shadow:0 20px 40px -20px #2f262299}
+  #peek img{width:100%;height:100%;object-fit:cover;display:block}
+  #peek.on{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-3deg)}
+
+  footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-block:22px 34px;margin-top:8vh;border-top:1px solid var(--rule);font-family:var(--mono);font-size:12px;color:var(--dim)}
+
+  @media (max-width:820px){
+    .about{grid-template-columns:1fr}
+    .row{grid-template-columns:3.6em minmax(0,1fr)}
+    .row .t{white-space:normal}
+    .row .mobile-pic{display:block;grid-column:2;width:100%;max-width:420px;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:4px;margin-top:8px}
+    nav.links{gap:16px;font-size:14px}
+    .hint{left:28px;right:auto;bottom:auto;top:84px}
+  }
+  @media (max-width:520px){
+    .mark{letter-spacing:.14em;font-size:13px;gap:8px}
+    nav.links a[href="/"]{display:none}
+  }
+  @media (prefers-reduced-motion: reduce){ .row .t{transition:none} #peek{transition:none} }
+</style>
+</head>
+<body>
+<header class="gut">
+  <a class="mark" href="./" aria-label="SoundBites home">
+    <svg viewBox="0 0 46 26" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+      <path d="M2 13h4M40 13h4"/><path d="M8 9v8M12 5v16M16 8v10M20 2v22M24 6v14M28 9v8M32 4v18M36 8v10"/>
+    </svg>
+    SoundBites
+  </a>
+  <nav class="links" aria-label="Elsewhere">
+    <a href="/visualstims/">visualstims</a>
+    <a href="/neurosims/">neurosims</a>
+    <a href="/">nelu radpour</a>
+  </nav>
+</header>
+
+<section class="hero gut">
+  <canvas id="strings" aria-label="A row of strings across the page. Drag across them to strum."></canvas>
+  <h1><span class="script">Sound,</span><span class="rest">you can touch</span></h1>
+  <span class="hint" id="hint">drag across the strings ↯</span>
+</section>
+
+<section class="about gut">
+  <div>
+    <h2>SoundBites is a set of things to play and listen to</h2>
+    <p>Some are instruments you can actually play: tap them, roll on them, use as many fingers as you like. Some are lessons that start at square one and build up how music works, with sound at every step. Everything runs live in your browser, with the sound made as you play rather than from recordings.</p>
+    <p>It's a sister site to <a href="/visualstims/">VisualStims</a>, for looking at brain science, and <a href="/neurosims/">NeuroSims</a>, for learning how it works. SoundBites is for your ears.</p>
+  </div>
+  <svg class="wave" viewBox="0 0 300 120" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" id="aboutWave"></svg>
+</section>
+
+<section class="index touch gut" aria-labelledby="ins">
+  <p class="lab" id="ins">Instruments</p>
+  <a class="row" data-fx="clink" href="rosewood/" data-peek="rosewood/thumb.jpg">
+    <span class="n">a</span>
+    <span class="t">Rosewood</span>
+    <img class="mobile-pic" src="rosewood/thumb.jpg" alt="A rosewood xylophone seen from above, two rows of tapering bars on dark rails" width="900" height="600" loading="lazy">
+  </a>
+  <a class="row" data-fx="riz" href="santoor/" data-peek="santoor/thumb.jpg">
+    <span class="n">b</span>
+    <span class="t">Santoor</span>
+    <img class="mobile-pic" src="santoor/thumb.jpg" alt="A Persian santur seen from above: a walnut trapezoid strung with steel and brass courses over two slanted rows of little bridges, with khatam inlay and two star rosettes" width="900" height="600" loading="lazy">
+  </a>
+</section>
+
+<section class="index gut" aria-labelledby="les">
+  <p class="lab" id="les">Lessons</p>
+  <a class="row" data-fx="octave" href="split-the-octave/" data-peek="split-the-octave/thumb.jpg">
+    <span class="n">1</span>
+    <span class="t">Split the Octave</span>
+    <img class="mobile-pic" src="split-the-octave/thumb.jpg" alt="A grid of nine hand-drawn music pictures: sound ripples, instrument ribbons, a note spiral, a staircase of keys, a rhythm wheel, an interval figure, a sun over a scale, stacked chord stones and a pitch helix" width="900" height="600" loading="lazy">
+  </a>
+</section>
+
+<footer class="gut">
+  <span>made by nelu radpour · florida state university</span>
+</footer>
+
+<div id="peek" aria-hidden="true"><img alt=""></div>
+
+<script>
+/* ---- hero: strings you can strum. A pentatonic harp across the page; plucks are Karplus–Strong strings ---- */
+(function(){
+'use strict';
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cv = document.getElementById('strings'), g = cv.getContext('2d');
+const NOTES = [45, 48, 50, 52, 55, 57, 60, 62, 64, 67, 69, 72, 74, 76];   // A minor pentatonic, low at the bottom
+let W = 0, H = 0, DPR = 1, S = [];
+function layout(){
+  DPR = Math.min(2, devicePixelRatio || 1);
+  const r = cv.getBoundingClientRect(); W = r.width; H = r.height;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  const n = W < 700 ? 10 : NOTES.length, top = H * .16, bot = H * .9;
+  S = [];
+  for (let i = 0; i < n; i++){
+    const k = n - 1 - i, y = top + (bot - top) * i / (n - 1);
+    const tilt = (W < 700 ? 30 : 70) * Math.sin(i * .5 + .4);
+    S.push({ m: NOTES[k], y0: y - tilt / 2, y1: y + tilt / 2, a: 0, t: -9, px: .5, f: 440 * Math.pow(2, (NOTES[k] - 69) / 12), gold: k % 3 === 0 });
+  }
+}
+const yAt = (s, x) => s.y0 + (s.y1 - s.y0) * (x / W);
+
+let ctx = null, bus, cache = new Map();
+function ac(){
+  if (!ctx){
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+    bus = ctx.createGain(); bus.gain.value = .5;
+    const conv = ctx.createConvolver(), n = ctx.sampleRate * 2.4, b = ctx.createBuffer(2, n, ctx.sampleRate);
+    for (let c = 0; c < 2; c++){ const d = b.getChannelData(c); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.5); }
+    conv.buffer = b; const wet = ctx.createGain(); wet.gain.value = .22;
+    bus.connect(comp); bus.connect(conv); conv.connect(wet); wet.connect(comp); comp.connect(ctx.destination);
+  }
+  if (ctx.state === 'suspended') ctx.resume();
+  return ctx;
+}
+function pluckBuf(f){
+  if (cache.has(f)) return cache.get(f);
+  const sr = ctx.sampleRate, n = Math.floor(sr * 3), buf = ctx.createBuffer(1, n, sr), out = buf.getChannelData(0);
+  const D = sr / f, a1 = .3, N = Math.floor(D - a1 - .1), fr = D - a1 - N, C = (1 - fr) / (1 + fr), loss = Math.pow(10, -3 / (3.2 * f));
+  const dl = new Float32Array(N); for (let i = 0; i < N; i++) dl[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / N);
+  let idx = 0, prev = 0, x1 = 0, y1 = 0, pk = 1e-9;
+  for (let t = 0; t < n; t++){
+    const o = dl[idx], fl = loss * ((1 - a1) * o + a1 * prev); prev = o;
+    const ap = C * fl + x1 - C * y1; x1 = fl; y1 = ap; dl[idx] = ap; if (++idx === N) idx = 0;
+    out[t] = o; if (Math.abs(o) > pk) pk = Math.abs(o);
+  }
+  for (let t = 0; t < n; t++) out[t] *= (t > n - 4000 ? (n - t) / 4000 : 1) / pk;
+  cache.set(f, buf); return buf;
+}
+function pluck(s, v, x, sound){
+  const now = performance.now() / 1000;
+  s.a = Math.max(s.a * Math.exp(-(now - s.t) * 2.2), v); s.t = now; s.px = x / W;
+  if (!sound || !ctx) return;
+  const src = ctx.createBufferSource(), gn = ctx.createGain(), pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+  src.buffer = pluckBuf(s.f); gn.gain.value = .25 + .5 * v;
+  src.connect(gn); if (pan){ pan.pan.value = (x / W - .5) * .8; gn.connect(pan); pan.connect(bus); } else gn.connect(bus);
+  src.start();
+}
+
+let last = null, down = false;
+function cross(x0, y0, x1, y1, sound){
+  const sp = Math.min(1, Math.hypot(x1 - x0, y1 - y0) / 40);
+  for (const s of S){
+    const a = y0 - yAt(s, x0), b = y1 - yAt(s, x1);
+    if (a === 0 || a * b < 0) pluck(s, sound ? .45 + .55 * sp : .25 + .3 * sp, (x0 + x1) / 2, sound);
+  }
+}
+function pos(e){ const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+cv.addEventListener('pointerdown', e => {
+  ac(); down = true; last = pos(e);
+  document.getElementById('hint').style.opacity = 0;
+  let best = null, bd = 18; for (const s of S){ const d = Math.abs(last[1] - yAt(s, last[0])); if (d < bd){ bd = d; best = s; } }
+  if (best) pluck(best, .8, last[0], true);
+});
+cv.addEventListener('pointermove', e => {
+  const p = pos(e);
+  if (last) cross(last[0], last[1], p[0], p[1], down || e.pointerType !== 'mouse');
+  last = p;
+});
+addEventListener('pointerup', () => { down = false; });
+cv.addEventListener('pointerleave', () => { last = null; down = false; });
+
+function frame(){
+  const now = performance.now() / 1000;
+  g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, W, H);
+  g.lineCap = 'round';
+  for (const s of S){
+    const dt = now - s.t, a = RM ? 0 : s.a * Math.exp(-dt * 2.2);
+    const A = a * 26, w = now * (34 + s.f * .02);
+    g.strokeStyle = s.gold ? 'rgba(201,154,62,.85)' : 'rgba(47,38,34,.5)';
+    g.lineWidth = s.gold ? 1.6 : 1.1;
+    g.beginPath();
+    const n = a > .004 ? 60 : 1;
+    for (let q = 0; q <= n; q++){
+      const u = q / n, x = u * W;
+      // a plucked string's shape: a triangle at the pluck point that rings back and forth
+      const shape = u < s.px ? u / s.px : (1 - u) / (1 - s.px);
+      const y = yAt(s, x) + A * shape * Math.cos(w) + A * .3 * Math.sin(2 * Math.PI * u) * Math.sin(w * 2.03);
+      q ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.stroke();
+    if (a > .02){ g.strokeStyle = `rgba(200,100,60,${Math.min(.35, a * .4)})`; g.lineWidth = 6; g.stroke(); }
+  }
+  requestAnimationFrame(frame);
+}
+let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(layout, 120); });
+layout(); requestAnimationFrame(frame);
+if (!RM) setTimeout(() => { const x0 = W * .08; S.forEach((s, i) => setTimeout(() => pluck(s, .55, x0 + i * 6, false), i * 55)); }, 500);
+
+/* a little waveform beside the about text: a few harmonics adding up */
+const svg = document.getElementById('aboutWave');
+const path = h => { let d = ''; for (let x = 0; x <= 300; x += 2){ const t = x / 300 * Math.PI * 4; let y = 0; for (let k = 1; k <= h; k++) y += Math.sin(k * t) / k; d += (x ? 'L' : 'M') + x + ' ' + (60 - y * 24).toFixed(1); } return d; };
+[1, 2, 4, 9].forEach((h, i) => { const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', path(h)); p.setAttribute('opacity', (.25 + i * .25).toFixed(2)); svg.appendChild(p); });
+
+/* floating preview over the index */
+const peek = document.getElementById('peek'), pimg = peek.querySelector('img');
+document.querySelectorAll('a.row[data-peek]').forEach(a => {
+  a.addEventListener('pointerenter', e => { if (e.pointerType !== 'mouse') return; pimg.src = a.dataset.peek; peek.classList.add('on'); });
+  a.addEventListener('pointerleave', () => peek.classList.remove('on'));
+});
+addEventListener('pointermove', e => { peek.style.left = (e.clientX + 170) + 'px'; peek.style.top = e.clientY + 'px'; }, {passive:true});
+})();
+</script>
+<script>
+/* wavy hero letters */
+(function(){
+  const rest = document.querySelector('.hero h1 .rest'); if (!rest) return;
+  const txt = rest.textContent; rest.textContent = ''; rest.setAttribute('aria-label', txt);
+  let i = 0;
+  txt.split(/(\s+)/).forEach(part => {
+    if (!part) return;
+    if (/^\s+$/.test(part)){ rest.appendChild(document.createTextNode(part)); return; }
+    const w = document.createElement('span'); w.className = 'w'; w.setAttribute('aria-hidden', 'true');
+    for (const c of part){ const s = document.createElement('span'); s.className = 'ch'; s.textContent = c; s.style.setProperty('--i', i++); w.appendChild(s); }
+    rest.appendChild(w);
+  });
+})();
+</script>
+<script>
+/* each name moves like its piece */
+(function(){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const rows = [...document.querySelectorAll('.row[data-fx]')].map(row => {
+    const t = row.querySelector('.t'); const txt = t.textContent; t.textContent = ''; t.setAttribute('aria-label', txt);
+    const cs = [...txt].map((ch, i) => { const s = document.createElement('span'); s.className = 'c'; s.setAttribute('aria-hidden', 'true'); s.textContent = ch === ' ' ? '\u00a0' : ch; t.appendChild(s); return { el: s, i }; });
+    return { fx: row.dataset.fx, cs, row, on: true };
+  });
+  const io = new IntersectionObserver(es => es.forEach(e => { const r = rows.find(r => r.row === e.target); if (r) r.on = e.isIntersecting; }));
+  rows.forEach(r => io.observe(r.row));
+  function frame(now){
+    const t = now / 1000;
+    for (const r of rows){
+      if (!r.on) continue;
+      const n = r.cs.length;
+      r.cs.forEach(c => {
+        const i = c.i; let tf = '', col = '';
+        switch (r.fx){
+          case 'octave': { const k = Math.floor(t * 4.5) % (n + 3), on = i === k; tf = on ? 'translateY(-.09em)' : ''; if (on) col = `hsl(${(i * 30 + 350) % 360} 65% 48%)`; break; }
+          case 'clink': { const k = (t * 3.2) % (n + 2), d = Math.max(0, 1 - Math.abs(i - k) * 1.6); tf = `translateY(${(d * d * .07).toFixed(3)}em) rotate(${(Math.sin(t * 40) * d * 2).toFixed(2)}deg)`; break; }
+          case 'riz': { const k = (t * 2.4) % (n + 4) - 1, d = Math.max(0, 1 - Math.abs(i - k) * .7); tf = `translateY(${(Math.sin(t * 88 + i * 1.7) * d * .035).toFixed(3)}em)`; if (d > .05) col = `color-mix(in oklab, currentColor, #c99a3e ${(d * 70).toFixed(0)}%)`; break; }
+        }
+        c.el.style.transform = tf; c.el.style.color = col;
+      });
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
