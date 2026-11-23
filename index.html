@@ -132,6 +132,11 @@
     <span class="t">Santoor</span>
     <img class="mobile-pic" src="santoor/thumb.jpg" alt="A Persian santur seen from above: a walnut trapezoid strung with steel and brass courses over two slanted rows of little bridges, with khatam inlay and two star rosettes" width="900" height="600" loading="lazy">
   </a>
+  <a class="row" data-fx="warble" href="waterphone/" data-peek="waterphone/thumb.jpg">
+    <span class="n">c</span>
+    <span class="t">Waterphone</span>
+    <img class="mobile-pic" src="waterphone/thumb.jpg" alt="A waterphone floating in the dark: a spun-steel belly with a tall neck and a ring of bronze rods, a few of them glowing as they sound" width="900" height="600" loading="lazy">
+  </a>
 </section>
 
 <section class="index gut" aria-labelledby="les">
@@ -309,6 +314,7 @@ addEventListener('pointermove', e => { peek.style.left = (e.clientX + 170) + 'px
         switch (r.fx){
           case 'octave': { const k = Math.floor(t * 4.5) % (n + 3), on = i === k; tf = on ? 'translateY(-.09em)' : ''; if (on) col = `hsl(${(i * 30 + 350) % 360} 65% 48%)`; break; }
           case 'clink': { const k = (t * 3.2) % (n + 2), d = Math.max(0, 1 - Math.abs(i - k) * 1.6); tf = `translateY(${(d * d * .07).toFixed(3)}em) rotate(${(Math.sin(t * 40) * d * 2).toFixed(2)}deg)`; break; }
+          case 'warble': { const k = (t * 1.9) % (n + 5) - 2, d = Math.max(0, 1 - Math.abs(i - k) * .4); tf = `translateY(${(Math.sin(t * 4.2 + i * .8) * d * .07).toFixed(3)}em) rotate(${(Math.sin(t * 2.6 + i) * d * 3).toFixed(2)}deg)`; if (d > .05) col = `color-mix(in oklab, currentColor, #2a9fa3 ${(d * 75).toFixed(0)}%)`; break; }
           case 'riz': { const k = (t * 2.4) % (n + 4) - 1, d = Math.max(0, 1 - Math.abs(i - k) * .7); tf = `translateY(${(Math.sin(t * 88 + i * 1.7) * d * .035).toFixed(3)}em)`; if (d > .05) col = `color-mix(in oklab, currentColor, #c99a3e ${(d * 70).toFixed(0)}%)`; break; }
         }
         c.el.style.transform = tf; c.el.style.color = col;

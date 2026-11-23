@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Waterphone · SoundBites</title>
+<meta name="description" content="A waterphone you can actually play: bow its bronze rods, strike them, rub the steel belly with a superball, and tilt it so the water inside bends every note. All sound synthesised live.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Geist+Mono:wght@400;500&family=Fraunces:ital,opsz,wght,SOFT,WONK@1,9..144,100..900,0..100,0..1&family=Homemade+Apple&display=swap">
+<style>
+  /* Same family as Rosewood and Santoor (title top-left, how-to top-right, one soft toolbar), but lit like a dark stage. */
+  :root{
+    --wall:#0b1517;
+    --ink:#dbe8e5;
+    --soft:#8fa9a5;
+    --chip:#0f1c1fd9;
+    --line:#dbe8e524;
+    --hot:#62d9d2;
+    --amber:#f0b46a;
+    --grot:"Bricolage Grotesque","Helvetica Neue",Arial,system-ui,sans-serif;
+    --mono:"Geist Mono",ui-monospace,Menlo,monospace;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;color:var(--ink);background:radial-gradient(110% 85% at 50% 40%,#16292d 0%,#0b1517 55%,#040809 100%)}
+  body{font-family:var(--grot);-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  #c{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;display:block;touch-action:none}
+
+  header{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:20px max(24px,env(safe-area-inset-right,0px)) 0 max(24px,env(safe-area-inset-left,0px));pointer-events:none}
+  header a{pointer-events:auto;font-size:13px;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;color:var(--ink)}
+  .title h1{margin:10px 0 0;font-weight:400;line-height:1}
+  .title .script{display:block;font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:300;font-variation-settings:"opsz" 144,"SOFT" 100,"WONK" 1;font-size:clamp(40px,4.4vw,68px);letter-spacing:.01em}
+  .title .sub{display:block;font-family:"Homemade Apple","Snell Roundhand",cursive;font-size:clamp(12px,1vw,15px);color:var(--soft);margin-top:6px;transform:rotate(-2deg);transform-origin:left}
+  .how{margin:0;padding:0;list-style:none;font-family:var(--mono);font-size:11.5px;line-height:1.75;color:var(--soft);text-align:right}
+  .how b{font-weight:500;color:var(--ink)}
+
+  .bar{position:fixed;left:0;right:0;margin:0 auto;width:fit-content;bottom:max(18px,env(safe-area-inset-bottom,0px));z-index:6;display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px);background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 10px;box-shadow:0 14px 40px -18px #000;backdrop-filter:blur(10px)}
+  .bar button{font:500 12.5px/1 var(--grot);color:var(--ink);background:transparent;border:1px solid transparent;border-radius:999px;padding:8px 11px;cursor:pointer;white-space:nowrap}
+  .bar button:hover{background:#dbe8e512}
+  .bar button[aria-pressed="true"]{background:var(--ink);color:#0b1517}
+  .bar button:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+  .bar button[hidden]{display:none}
+  .sep{width:1px;height:22px;background:var(--line);margin:0 3px}
+  .grp{display:flex;gap:2px;align-items:center;flex-wrap:wrap;justify-content:center}
+
+  #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 58px);z-index:6;font:500 13px var(--grot);background:var(--ink);color:#0b1517;padding:8px 15px;border-radius:999px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 24px);overflow:hidden;text-overflow:ellipsis}
+  #toast.on{opacity:1}
+  #toast b{font-weight:600}
+  #start{position:fixed;inset:0;z-index:4;display:grid;place-items:center;pointer-events:none}
+  #start span{font:500 13px var(--mono);color:var(--soft);background:#0b1517b0;border:1px solid var(--line);padding:8px 14px;border-radius:999px;transition:opacity .6s;transform:translateY(22vh)}
+
+  body.thumb header,body.thumb .bar,body.thumb #toast,body.thumb #start{display:none}
+  @media (max-width:860px){
+    .how{display:none}
+    .title h1{margin-top:6px}
+    .title .script{font-size:34px}
+    .title .sub{font-size:11px}
+    .bar{bottom:10px;border-radius:20px;gap:2px;padding:5px}
+    .bar button{padding:8px 8px;font-size:12px}
+    .sep{display:none}
+  }
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="c" aria-label="A waterphone floating in the dark: a steel belly with a tall neck and thirty bronze rods around its rim. Drag across the rods to bow them, grab the neck to tilt it, and drag the dark to look around."></canvas>
+
+<header>
+  <div>
+    <a href="../">&larr; SoundBites</a>
+    <div class="title"><h1><span class="script">Waterphone</span><span class="sub">bronze, steel, and a little water</span></h1></div>
+  </div>
+  <ul class="how">
+    <li><b>bow</b>: drag across the rods · faster = louder</li>
+    <li><b>mallet</b>: tap or sweep the rods, or knock the belly</li>
+    <li><b>superball</b>: rub the belly for the deep moans</li>
+    <li><b>grab the neck</b> and tilt: the water bends the notes</li>
+    <li>keys <b>Z–/ A–; Q–P</b> play rods · <b>space</b> swirls · <b>arrows</b> tilt</li>
+  </ul>
+</header>
+
+<div id="start" aria-hidden="true"><span>drag across the rods · sound on</span></div>
+
+<div class="bar" role="toolbar" aria-label="Waterphone controls">
+  <div class="grp" role="group" aria-label="What you play with">
+    <button id="tBow" aria-pressed="true">Bow</button>
+    <button id="tMallet" aria-pressed="false">Mallet</button>
+    <button id="tBall" aria-pressed="false">Superball</button>
+  </div>
+  <span class="sep"></span>
+  <div class="grp">
+    <button id="bSwirl" aria-pressed="false">Swirl</button>
+    <button id="bHaunt" aria-pressed="false">Haunt</button>
+    <button id="bGyro" aria-pressed="false" hidden>Tilt phone</button>
+  </div>
+  <span class="sep"></span>
+  <div class="grp">
+    <button id="bWater" aria-pressed="false">See water</button>
+    <button id="bCave" aria-pressed="false">Cavern</button>
+    <button id="bSound" aria-pressed="true">Sound</button>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = s => document.querySelector(s);
+const THUMB = new URLSearchParams(location.search).has('thumb');
+if (THUMB) document.body.classList.add('thumb');
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+/* ---------------- the instrument (1 unit = 1 cm) ---------------- */
+// Thirty bronze rods welded round the rim of two spun-steel pans, with a tall open neck.
+// A rod is clamped at one end and free at the other, so its overtones sit at 6.27 and 17.55 times
+// the fundamental, and its pitch falls with the square of its length.
+const N = 30, RIM_R = 13.55, ROD_Y = 4.15, PIVOT = 3.6;
+const lens = Array.from({ length: N }, (_, i) => 7.5 + 14.5 * i / (N - 1));
+for (let i = N - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [lens[i], lens[j]] = [lens[j], lens[i]]; }
+const MODES = [1, 6.267, 17.55];
+const rods = lens.map((L, i) => {
+  const phi = (i / N) * Math.PI * 2 + (rnd() - .5) * .05;
+  const f = 1650 * Math.pow(7.5 / L, 2) * (1 + (rnd() - .5) * .05);
+  const tau0 = clamp(5.5 * Math.pow(300 / f, .35), 1.2, 7);
+  return { i, phi, L, f, tau0, cx: Math.cos(phi), sz: Math.sin(phi),
+    E: 0, dr: 0, dTarget: 0, se: 0, touched: false, sb: 0, hover: 0, cents: 0, v: null, idle: 0, auto: null, warm: 0, ph: rnd() * 6.28 };
+});
+const byPitch = [...rods].sort((a, b) => a.f - b.f);
+const KEYS = 'zxcvbnm,./asdfghjkl;qwertyuiop';
+const keyRod = new Map([...KEYS].map((k, i) => [k, byPitch[i]]));
+
+let tool = 'bow', soundOn = true, xray = false, cave = false, haunt = false, gyro = false;
+
+/* ---------------- renderer, scene, camera ---------------- */
+const cv = $('#c');
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, preserveDrawingBuffer: THUMB });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.3;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x071012, .0042);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(stage(), .03).texture;
+// what the metal sees: a dark hall with one big cool softbox above, a teal strip on the left and an amber one on the right
+function stage(){
+  const env = new THREE.Scene();
+  const geo = new THREE.SphereGeometry(100, 48, 24), col = [], c = new THREE.Color();
+  const top = new THREE.Color(0x5a7c84), mid = new THREE.Color(0x1d2f33), low = new THREE.Color(0x06090a);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++){
+    const y = p.getY(i) / 100;
+    if (y > 0) c.copy(mid).lerp(top, Math.pow(y, .7)); else c.copy(mid).lerp(low, Math.min(1, -y * 3));
+    col.push(c.r, c.g, c.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  env.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  const box = (w, h, x, y, z, color, k) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(k), side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.lookAt(0, 0, 0); env.add(m);
+  };
+  box(70, 34, -22, 72, 26, 0xeaf6ff, 12);   // big key softbox overhead
+  box(50, 18, 30, 40, 60, 0xdfeef0, 3);     // a second, softer one front-right
+  box(18, 70, -72, 18, -22, 0x3fd0cc, 6); // teal strip, left
+  box(18, 60, 70, 14, -26, 0xffa253, 5.5);  // amber strip, right
+  box(80, 16, 0, 12, 80, 0xbfd8dc, 2.2);     // faint fill in front so the near side isn't black
+  box(30, 8, 0, -30, -70, 0x3fd0cc, .6);    // a low glow behind
+  return env;
+}
+scene.background = (() => {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 512; const x = c.getContext('2d');
+  const gr = x.createRadialGradient(256, 200, 0, 256, 200, 470);
+  gr.addColorStop(0, '#18303a'); gr.addColorStop(.45, '#0c181b'); gr.addColorStop(1, '#030607');
+  x.fillStyle = gr; x.fillRect(0, 0, 512, 512);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+
+const camera = new THREE.PerspectiveCamera(34, 1, .5, 900);
+const TARGET = new THREE.Vector3(0, 14.5, 0);
+const ptrs = new Map();
+cv.addEventListener('pointerdown', onDown);      // before OrbitControls, so grabbing a rod switches orbiting off first
+const controls = new OrbitControls(camera, cv);
+controls.enableDamping = true; controls.dampingFactor = .08; controls.enablePan = false;
+controls.minPolarAngle = .35; controls.maxPolarAngle = 1.62; controls.rotateSpeed = .55;
+controls.target.copy(TARGET);
+camera.position.set(0, 30, 64);
+
+const key = new THREE.DirectionalLight(0xe8f4ff, 2.3);
+key.position.set(-18, 60, 26); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -.0004; key.shadow.normalBias = .03;
+Object.assign(key.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 5, far: 140 });
+scene.add(key);
+const rimL = new THREE.DirectionalLight(0x4fd6d0, 1.5); rimL.position.set(-50, 18, -40); scene.add(rimL);
+const rimR = new THREE.DirectionalLight(0xffa860, 1.3); rimR.position.set(50, 12, -34); scene.add(rimR);
+scene.add(new THREE.HemisphereLight(0x9fc7c9, 0x0a0e10, .28));
+
+const FLOOR_Y = -2;
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), new THREE.ShadowMaterial({ opacity: .55 }));
+floor.rotation.x = -Math.PI / 2; floor.position.y = FLOOR_Y; floor.receiveShadow = true; scene.add(floor);
+const glowTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+  const g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.25, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+})();
+const pool = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.MeshBasicMaterial({ map: glowTex, color: 0x3fd0cc, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+pool.rotation.x = -Math.PI / 2; pool.position.y = FLOOR_Y + .02; scene.add(pool);
+
+// dust in the light
+const dust = (() => {
+  const n = 420, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++){ pos[i * 3] = (rnd() - .5) * 140; pos[i * 3 + 1] = rnd() * 70 - 5; pos[i * 3 + 2] = (rnd() - .5) * 140; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const m = new THREE.PointsMaterial({ size: .32, map: glowTex, color: 0x9fe3de, transparent: true, opacity: .4, depthWrite: false, blending: THREE.AdditiveBlending });
+  const p = new THREE.Points(g, m); scene.add(p); return p;
+})();
+
+/* ---------------- materials ---------------- */
+const spun = (() => {                 // spun-steel rings: stripes that run round the bowl
+  const c = document.createElement('canvas'); c.width = 64; c.height = 1024; const x = c.getContext('2d');
+  for (let y = 0; y < 1024; y++){ const v = 150 + rnd() * 70 + Math.sin(y * .7) * 10; x.fillStyle = `rgb(${v},${v},${v})`; x.fillRect(0, y, 64, 1); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+})();
+const steel = new THREE.MeshPhysicalMaterial({ color: 0xd3dade, metalness: 1, roughness: .3, roughnessMap: spun, bumpMap: spun, bumpScale: .06, envMapIntensity: 1.3, clearcoat: .35, clearcoatRoughness: .2, side: THREE.DoubleSide });
+const weldM = new THREE.MeshStandardMaterial({ color: 0x6f655c, metalness: .85, roughness: .5 });
+const darkM = new THREE.MeshStandardMaterial({ color: 0x050708, roughness: 1 });
+
+/* ---------------- build ---------------- */
+const inst = new THREE.Group(); inst.position.y = PIVOT + 2.6; scene.add(inst);
+const body = new THREE.Group(); body.position.y = -PIVOT; inst.add(body);
+const panPts = [[.01, 0], [3, .1], [6, .4], [8.5, .9], [10.8, 1.6], [12.6, 2.4], [13.8, 3.1], [14.35, 3.55], [14.45, 3.85], [14.15, 4.1], [12.6, 4.6], [10, 5.3], [7, 5.85], [4, 6.2], [1.5, 6.35]].map(([r, y]) => new THREE.Vector2(r, y));
+const pan = new THREE.Mesh(new THREE.LatheGeometry(panPts, 120), steel);
+pan.castShadow = true; pan.receiveShadow = true; pan.userData.kind = 'pan'; body.add(pan);
+const lip = new THREE.Mesh(new THREE.TorusGeometry(14.38, .2, 10, 160), weldM); lip.rotation.x = Math.PI / 2; lip.position.y = 3.72; body.add(lip);
+const NECK_H = 24;
+const neck = new THREE.Mesh(new THREE.CylinderGeometry(1.22, 1.42, NECK_H, 40, 1, true), steel);
+neck.position.y = 6.2 + NECK_H / 2; neck.castShadow = true; body.add(neck);
+const collar = new THREE.Mesh(new THREE.TorusGeometry(1.42, .24, 10, 40), weldM); collar.rotation.x = Math.PI / 2; collar.position.y = 6.3; body.add(collar);
+const mouth = new THREE.Mesh(new THREE.TorusGeometry(1.24, .17, 10, 40), steel); mouth.rotation.x = Math.PI / 2; mouth.position.y = 6.2 + NECK_H; body.add(mouth);
+const throat = new THREE.Mesh(new THREE.CircleGeometry(1.15, 32), darkM); throat.rotation.x = -Math.PI / 2; throat.position.y = 6.2 + NECK_H - 3; body.add(throat);
+const neckHit = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, NECK_H + 2, 12), new THREE.MeshBasicMaterial());
+neckHit.position.copy(neck.position); neckHit.visible = false; neckHit.userData.kind = 'neck'; body.add(neckHit);
+
+// the water in the bottom pan
+const WATER_Y = 1.85;
+const waterGeo = new THREE.RingGeometry(.01, 10.6, 72, 12); waterGeo.rotateX(-Math.PI / 2);
+const waterBase = Float32Array.from(waterGeo.attributes.position.array);
+const water = new THREE.Mesh(waterGeo, new THREE.MeshPhysicalMaterial({ color: 0x2fa9b8, roughness: .06, metalness: 0, transparent: true, opacity: .72, emissive: 0x06363d, side: THREE.DoubleSide, clearcoat: 1 }));
+water.position.y = WATER_Y; water.renderOrder = 1; body.add(water);
+
+const haloMat = () => new THREE.SpriteMaterial({ map: glowTex, color: 0x7fe9ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+const up = new THREE.Vector3(0, 1, 0), LEAN = Math.tan(6 * Math.PI / 180);
+const rodHits = [];
+for (const r of rods){
+  const g = new THREE.Group();
+  g.position.set(RIM_R * r.cx, ROD_Y, RIM_R * r.sz);
+  g.quaternion.setFromUnitVectors(up, new THREE.Vector3(r.cx * LEAN, 1, r.sz * LEAN).normalize());
+  body.add(g);
+  const w = new THREE.Group(); g.add(w);                       // the part that wobbles when it sounds
+  const tone = new THREE.Color(0xcf9a5e).lerp(new THREE.Color(0x9c6a38), rnd() * .7);
+  const m = new THREE.MeshPhysicalMaterial({ color: tone, metalness: 1, roughness: .2 + rnd() * .1, clearcoat: .3, emissive: 0x000000, envMapIntensity: 1.7 });
+  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(.2, .25, r.L, 14).translate(0, r.L / 2, 0), m);
+  cyl.castShadow = true; w.add(cyl);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(.2, 14, 8), m); tip.position.y = r.L; w.add(tip);
+  const weld = new THREE.Mesh(new THREE.SphereGeometry(.5, 14, 8), weldM); weld.scale.set(1, .55, 1); g.add(weld);
+  const halo = new THREE.Sprite(haloMat()); halo.position.y = r.L; halo.scale.setScalar(2.5); w.add(halo);
+  const hit = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, r.L + 1, 8).translate(0, r.L / 2, 0), new THREE.MeshBasicMaterial());
+  hit.visible = false; hit.userData.rod = r; g.add(hit); rodHits.push(hit);
+  Object.assign(r, { g, w, m, halo, tone });
+}
+
+// the bow: dark pernambuco stick, pale horsehair, an ebony frog
+const bow = new THREE.Group();
+{
+  const wood = new THREE.MeshPhysicalMaterial({ color: 0x4a2414, roughness: .35, clearcoat: .8 });
+  const hair = new THREE.MeshStandardMaterial({ color: 0xefe6d0, roughness: .9 });
+  const eb = new THREE.MeshStandardMaterial({ color: 0x15100d, roughness: .4 });
+  const stick = new THREE.Mesh(new THREE.CylinderGeometry(.2, .3, 48, 10), wood); stick.rotation.x = Math.PI / 2; stick.position.y = 1.05; bow.add(stick);
+  const hr = new THREE.Mesh(new THREE.BoxGeometry(.75, .06, 43), hair); hr.position.y = .03; bow.add(hr);
+  const frog = new THREE.Mesh(new THREE.BoxGeometry(.55, 1.2, 3.2), eb); frog.position.set(0, .55, -21.2); bow.add(frog);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(.45, 1.3, 1.1), wood); head.position.set(0, .6, 22.6); bow.add(head);
+  bow.traverse(o => { if (o.isMesh) o.castShadow = true; });
+}
+bow.visible = false; scene.add(bow);
+let bowFade = 0;
+
+/* ---------------- sizing ---------------- */
+function resize(){
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  const t = Math.tan(camera.fov * Math.PI / 360), need = 40;
+  const dist = Math.max(need / (2 * t), need * 1.1 / (2 * t * camera.aspect)) * 1.12;
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  camera.position.copy(controls.target).addScaledVector(dir, dist);
+  controls.minDistance = dist * .55; controls.maxDistance = dist * 1.7;
+}
+addEventListener('resize', resize); resize();
+
+/* ---------------- audio ---------------- */
+let ctx = null, A = {};
+const BOWL = [148, 233, 341, 467, 618, 790, 1010];
+function audio(){
+  if (ctx){ if (ctx.state === 'suspended') ctx.resume(); return ctx; }
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+  ctx = new AC({ latencyHint: 'interactive' });
+  const sr = ctx.sampleRate;
+  const nb = ctx.createBuffer(1, sr * 2, sr), nd = nb.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  A.noise = nb;
+  A.out = ctx.createGain(); A.out.gain.value = soundOn ? 1 : 0; A.out.connect(ctx.destination);
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -16; comp.knee.value = 14; comp.ratio.value = 3.5; comp.attack.value = .004; comp.release.value = .3;
+  comp.connect(A.out);
+  A.master = ctx.createGain(); A.master.gain.value = .9; A.master.connect(comp);
+  A.dry = ctx.createGain();
+  const dryG = ctx.createGain(); dryG.gain.value = .6; A.dry.connect(dryG); dryG.connect(A.master);
+  // the steel belly: a bank of resonances the water pushes around
+  A.body = BOWL.map((f, k) => {
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = 24;
+    const g = ctx.createGain(); g.gain.value = .5 / (1 + k * .4);
+    A.dry.connect(bp); bp.connect(g); g.connect(A.master); return { bp, f };
+  });
+  // room and cavern
+  A.irRoom = makeIR(3.4, 2.4); A.irCave = makeIR(9, 1.6);
+  A.conv = ctx.createConvolver(); A.conv.buffer = cave ? A.irCave : A.irRoom;
+  A.rev = ctx.createGain(); A.rev.gain.value = cave ? .9 : .5;
+  A.dry.connect(A.rev); A.rev.connect(A.conv);
+  const wet = ctx.createGain(); wet.gain.value = .85; A.conv.connect(wet); wet.connect(A.master);
+  A.dlySend = ctx.createGain(); A.dlySend.gain.value = cave ? .22 : 0;
+  const dl = ctx.createDelay(2); dl.delayTime.value = .41; const fb = ctx.createGain(); fb.gain.value = .42;
+  const dlp = ctx.createBiquadFilter(); dlp.type = 'lowpass'; dlp.frequency.value = 2200;
+  A.dry.connect(A.dlySend); A.dlySend.connect(dl); dl.connect(dlp); dlp.connect(fb); fb.connect(dl); dlp.connect(A.conv); dlp.connect(A.master);
+  // water moving inside
+  const ws = noiseSrc(); A.wbp = ctx.createBiquadFilter(); A.wbp.type = 'bandpass'; A.wbp.frequency.value = 450; A.wbp.Q.value = 1.4;
+  A.wg = ctx.createGain(); A.wg.gain.value = 0; ws.connect(A.wbp); A.wbp.connect(A.wg); A.wg.connect(A.dry);
+  // superball moans: stick-slip on the belly, sounded through the belly's own modes
+  const mo = ctx.createOscillator(); mo.type = 'sawtooth'; mo.frequency.value = 90;
+  const jit = noiseSrc(), jl = ctx.createBiquadFilter(); jl.type = 'lowpass'; jl.frequency.value = 18; const jg = ctx.createGain(); jg.gain.value = 250;
+  jit.connect(jl); jl.connect(jg); jg.connect(mo.frequency);
+  const mlp = ctx.createBiquadFilter(); mlp.type = 'lowpass'; mlp.frequency.value = 1500;
+  A.mg = ctx.createGain(); A.mg.gain.value = 0; mo.connect(mlp);
+  A.moanBank = BOWL.map((f, k) => {
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = 10;
+    const g = ctx.createGain(); g.gain.value = 1.6 / (1 + k * .5); mlp.connect(bp); bp.connect(g); g.connect(A.mg); return { bp, f };
+  });
+  const grit = ctx.createGain(); grit.gain.value = .05; mlp.connect(grit); grit.connect(A.mg);
+  const sq = noiseSrc(), sqb = ctx.createBiquadFilter(); sqb.type = 'bandpass'; sqb.frequency.value = 2100; sqb.Q.value = 4;
+  A.sqg = ctx.createGain(); A.sqg.gain.value = 0; sq.connect(sqb); sqb.connect(A.sqg); A.sqg.connect(A.mg);
+  A.mg.connect(A.dry); mo.start(); A.mo = mo;
+  return ctx;
+}
+function noiseSrc(){ const s = ctx.createBufferSource(); s.buffer = A.noise; s.loop = true; s.start(0, Math.random() * 2); return s; }
+function makeIR(sec, pow){
+  const sr = ctx.sampleRate, n = Math.floor(sr * sec), b = ctx.createBuffer(2, n, sr);
+  for (let ch = 0; ch < 2; ch++){
+    const d = b.getChannelData(ch); let y = 0;
+    for (let i = 0; i < n; i++){
+      const t = i / n, a = .08 + .88 * t;                     // the tail gets darker as it dies
+      y += ((Math.random() * 2 - 1) - y) * (1 - a);
+      d[i] = (i < sr * .018 ? 0 : 1) * y * Math.pow(1 - t, pow) * (1 + 1.2 * (1 - t));
+    }
+  }
+  return b;
+}
+
+function voice(r){
+  if (r.v) return r.v;
+  const v = { oscs: [], sG: [], bG: [] }, t = ctx.currentTime;
+  v.out = ctx.createGain();
+  v.pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+  if (v.pan){ v.pan.pan.value = clamp(r.cx * .75, -1, 1); v.out.connect(v.pan); v.pan.connect(A.dry); } else v.out.connect(A.dry);
+  v.bow = ctx.createGain(); v.bow.gain.value = 1; v.bow.connect(v.out);
+  const jit = noiseSrc(), jl = ctx.createBiquadFilter(); jl.type = 'lowpass'; jl.frequency.value = 13;
+  const jg = ctx.createGain(); jg.gain.value = 8; jit.connect(jl); jl.connect(jg); jg.connect(v.bow.gain);
+  const fr = [r.f, r.f * 1.0021, r.f * MODES[1] * 1.004, r.f * MODES[2] * .996].filter(f => f < 15500);
+  fr.forEach(f => {
+    const o = ctx.createOscillator(); o.frequency.value = f;
+    const s = ctx.createGain(); s.gain.value = 0; const b = ctx.createGain(); b.gain.value = 0;
+    o.connect(s); s.connect(v.out); o.connect(b); b.connect(v.bow); o.start(t);
+    v.oscs.push(o); v.sG.push(s); v.bG.push(b);
+  });
+  const ns = noiseSrc();
+  v.bp1 = ctx.createBiquadFilter(); v.bp1.type = 'bandpass'; v.bp1.frequency.value = r.f; v.bp1.Q.value = 38;
+  v.bp2 = ctx.createBiquadFilter(); v.bp2.type = 'bandpass'; v.bp2.frequency.value = Math.min(15000, r.f * MODES[1]); v.bp2.Q.value = 26;
+  v.n1 = ctx.createGain(); v.n1.gain.value = 0; v.n2 = ctx.createGain(); v.n2.gain.value = 0;
+  ns.connect(v.bp1); v.bp1.connect(v.n1); v.n1.connect(v.bow); ns.connect(v.bp2); v.bp2.connect(v.n2); v.n2.connect(v.bow);
+  v.srcs = [jit, ns];
+  r.v = v; r.idle = 0; return v;
+}
+function freeVoice(r){
+  const v = r.v; if (!v) return; r.v = null;
+  const t = ctx.currentTime + .05;
+  v.oscs.forEach(o => o.stop(t)); v.srcs.forEach(s => s.stop(t));
+  setTimeout(() => v.out.disconnect(), 200);
+}
+
+function strike(r, vel){
+  wake();
+  r.se = Math.min(1.6, r.se + vel); r.warm = 1;
+  ripple(r.cx * 9.6, r.sz * 9.6, vel * .35);
+  if (navigator.vibrate && vel > .3) try { navigator.vibrate(6); } catch (e) {}
+  if (!audio()) return;
+  const v = voice(r), t = ctx.currentTime, br = .45 + .55 * vel, a = Math.pow(vel, 1.25) * .8;
+  const amps = [.4, .33, .34 * br, .14 * br * br], taus = [r.tau0, r.tau0 * .85, r.tau0 * .2, .14];
+  v.sG.forEach((s, k) => {
+    const g = s.gain, now = g.value;
+    g.cancelScheduledValues(t); g.setValueAtTime(now, t);
+    g.linearRampToValueAtTime(now * .3 + amps[k] * a, t + .003); g.setTargetAtTime(0, t + .003, taus[k]);
+  });
+  // the tick of the mallet itself
+  const src = ctx.createBufferSource(); src.buffer = A.noise;
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2600 + r.f; bp.Q.value = 1.8;
+  const g = ctx.createGain(); g.gain.setValueAtTime(.12 * a, t); g.gain.exponentialRampToValueAtTime(.0001, t + .03);
+  src.connect(bp); bp.connect(g); g.connect(v.out); src.start(t, Math.random()); src.stop(t + .05);
+}
+function bonk(x, z, vel){
+  wake();
+  ripple(x, z, vel * .6); Wv.x += (rnd() - .5) * .25 * vel; Wv.z += (rnd() - .5) * .25 * vel;
+  if (!audio()) return;
+  const t = ctx.currentTime, wf = waterFactor(), off = Math.hypot(x, z) / 14;
+  const g = ctx.createGain(); g.connect(A.dry);
+  BOWL.forEach((f, k) => {
+    const o = ctx.createOscillator(); o.frequency.value = f * wf * (1 + k * .002);
+    const e = ctx.createGain(), a = vel * .32 / (1 + k * (.7 - off * .45));
+    e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(a, t + .004); e.gain.setTargetAtTime(0, t + .004, 2.4 / (1 + k * .5));
+    o.connect(e); e.connect(g); o.start(t); o.stop(t + 6);
+  });
+  const src = ctx.createBufferSource(); src.buffer = A.noise;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
+  const e = ctx.createGain(); e.gain.setValueAtTime(.35 * vel, t); e.gain.exponentialRampToValueAtTime(.0001, t + .06);
+  src.connect(lp); lp.connect(e); e.connect(g); src.start(t, Math.random()); src.stop(t + .08);
+}
+function bubble(){
+  if (!ctx) return;
+  const t = ctx.currentTime, f0 = 520 + Math.random() * 1500;
+  const o = ctx.createOscillator(); o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 1.6, t + .07);
+  const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.035, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + .08);
+  o.connect(g); g.connect(A.dry); o.start(t); o.stop(t + .1);
+}
+
+/* ---------------- water + tilt ---------------- */
+// T: how far the vessel is tipped (pointing to the lowered side), W: the slope of the water surface, in the vessel's frame.
+// The water wants to match the tilt but overshoots and sloshes at about 1.15 Hz.
+const T = { x: 0, z: 0 }, Tv = { x: 0, z: 0 }, Tt = { x: 0, z: 0 };
+const W = { x: 0, z: 0 }, Wv = { x: 0, z: 0 };
+let swirlUntil = 0, swirlHeld = false, gyroT = null;
+const arrows = new Set();
+const ripples = [];
+function ripple(x, z, a){ ripples.push({ x, z, t: 0, a: clamp(a, 0, .8) }); if (ripples.length > 8) ripples.shift(); }
+const waterFactor = () => 1 + .07 * W.x - .05 * W.z + .12 * Math.hypot(W.x - T.x, W.z - T.z);
+
+/* ---------------- pointer ---------------- */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function cast(x, y, list){
+  const b = cv.getBoundingClientRect();
+  ndc.set(((x - b.left) / b.width) * 2 - 1, -((y - b.top) / b.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  return ray.intersectObjects(list, false)[0] || null;
+}
+const tmp = new THREE.Vector3();
+function rodHeight(r, point){ return clamp(r.g.worldToLocal(tmp.copy(point)).y, .6, r.L - .2); }
+function screenDir(){                   // world directions for screen-right and screen-down, flattened onto the floor
+  const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0); right.y = 0; right.normalize();
+  const toward = new THREE.Vector3().subVectors(camera.position, controls.target); toward.y = 0; toward.normalize();
+  return { right, toward };
+}
+
+function onDown(e){
+  wake(); audio();
+  const hit = cast(e.clientX, e.clientY, [...rodHits, neckHit, pan]);
+  if (!hit) return;
+  const kind = hit.object.userData.kind, r = hit.object.userData.rod;
+  const p = { x: e.clientX, y: e.clientY, acc: 0, d: 0, rod: null, kind: null, lost: 0, s: 0, h: 0, t: performance.now() };
+  if (kind === 'neck'){
+    p.kind = 'neck'; p.sx = e.clientX; p.sy = e.clientY; p.t0 = { x: Tt.x, z: Tt.z };
+  } else if (r){
+    p.rod = r; p.h = rodHeight(r, hit.point);
+    if (tool === 'mallet'){ p.kind = 'mallet'; strike(r, .58 + Math.random() * .12); }
+    else { p.kind = 'bow'; p.sb = tool === 'ball'; }
+  } else if (kind === 'pan'){
+    const lp = body.worldToLocal(hit.point.clone());
+    if (tool === 'mallet'){ p.kind = 'mallet'; bonk(lp.x, lp.z, .75); }
+    else if (tool === 'ball'){ p.kind = 'moan'; p.rad = Math.hypot(lp.x, lp.z); }
+    else return;                       // a bow on the belly does nothing: look around instead
+  } else return;
+  controls.enabled = false;
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  ptrs.set(e.pointerId, p);
+  e.preventDefault();
+}
+cv.addEventListener('pointermove', e => {
+  const p = ptrs.get(e.pointerId);
+  if (!p){ if (e.pointerType === 'mouse' && !e.buttons) hover(e); return; }
+  const dx = e.clientX - p.x, dy = e.clientY - p.y, dist = Math.hypot(dx, dy);
+  const now = performance.now(), dt = Math.max(1, now - p.t) / 1000;
+  p.x = e.clientX; p.y = e.clientY; p.t = now; p.acc += dist;
+  if (p.kind === 'neck'){
+    const { right, toward } = screenDir(), k = 1 / 330;
+    const ox = (e.clientX - p.sx) * k, oy = (e.clientY - p.sy) * k;
+    let x = p.t0.x + right.x * ox + toward.x * oy, z = p.t0.z + right.z * ox + toward.z * oy;
+    const m = Math.hypot(x, z); if (m > .55){ x *= .55 / m; z *= .55 / m; }
+    Tt.x = x; Tt.z = z; return;
+  }
+  if (p.kind === 'moan'){
+    const hit = cast(e.clientX, e.clientY, [pan]);
+    if (hit){ const lp = body.worldToLocal(hit.point.clone()); p.rad = Math.hypot(lp.x, lp.z); p.lost = 0; } else p.lost = 1;
+    return;
+  }
+  const hit = cast(e.clientX, e.clientY, rodHits);
+  const r = hit && hit.object.userData.rod;
+  if (p.kind === 'mallet'){
+    if (r && r !== p.rod) strike(r, clamp(dist / dt / 1700, .22, 1));
+    p.rod = r || null; return;
+  }
+  if (p.kind === 'bow'){
+    if (r){
+      if (r !== p.rod){ p.rod = r; p.s = clamp(p.s, -12, 12); }
+      p.h = rodHeight(r, hit.point); p.lost = 0;
+      // slide the bow along its own length
+      const { tScreen, pxPerCm } = bowScreen(p.rod, p.h);
+      p.s = clamp(p.s + (dx * tScreen.x + dy * tScreen.y) / pxPerCm, -18, 18);
+    } else p.lost += dt;
+  }
+});
+function release(e){
+  const p = ptrs.get(e.pointerId); if (!p) return;
+  ptrs.delete(e.pointerId);
+  if (p.kind === 'neck' && ![...ptrs.values()].some(q => q.kind === 'neck')){ Tt.x = 0; Tt.z = 0; }
+  if (!ptrs.size) controls.enabled = true;
+}
+cv.addEventListener('pointerup', release);
+cv.addEventListener('pointercancel', release);
+let hovered = null;
+function hover(e){
+  const hit = cast(e.clientX, e.clientY, [...rodHits, neckHit, pan]);
+  const r = hit && hit.object.userData.rod, k = hit && hit.object.userData.kind;
+  hovered = r || (k === 'neck' ? 'neck' : null);
+  cv.style.cursor = r ? (tool === 'mallet' ? 'pointer' : 'crosshair') : k === 'neck' ? 'grab' : (k === 'pan' && tool !== 'bow') ? 'pointer' : 'default';
+}
+// where the bow touches a rod, and which way along the screen its length runs
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _ax = new THREE.Vector3(), _rad = new THREE.Vector3(), _tan = new THREE.Vector3();
+function bowFrame(r, h){
+  r.g.updateWorldMatrix(true, false);
+  const base = _a.set(0, 0, 0).applyMatrix4(r.g.matrixWorld);
+  const top = _b.set(0, r.L, 0).applyMatrix4(r.g.matrixWorld);
+  _ax.subVectors(top, base).normalize();
+  const c = base.clone().addScaledVector(_ax, h);
+  const centre = new THREE.Vector3(0, ROD_Y, 0).applyMatrix4(body.matrixWorld);
+  _rad.subVectors(base, centre); _rad.addScaledVector(_ax, -_rad.dot(_ax)).normalize();
+  _tan.crossVectors(_ax, _rad).normalize();
+  return { c: c.addScaledVector(_rad, .3), ax: _ax.clone(), rad: _rad.clone(), tan: _tan.clone() };
+}
+function toScreen(v){ const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight }; }
+function bowScreen(r, h){
+  const f = bowFrame(r, h), a = toScreen(f.c), b = toScreen(f.c.clone().add(f.tan));
+  const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1;
+  return { tScreen: { x: dx / l, y: dy / l }, pxPerCm: l };
+}
+
+/* ---------------- keyboard ---------------- */
+const keysHeld = new Set();
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === ' '){ e.preventDefault(); if (!swirlHeld){ swirlHeld = true; wake(); } return; }
+  if (e.key.startsWith('Arrow')){ e.preventDefault(); arrows.add(e.key); wake(); return; }
+  const r = keyRod.get(k); if (!r || e.repeat) return;
+  e.preventDefault();
+  if (tool === 'mallet') strike(r, .7); else { keysHeld.add(r); r.sbKey = tool === 'ball'; wake(); audio(); }
+});
+addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if (k === ' ') swirlHeld = false;
+  arrows.delete(e.key);
+  const r = keyRod.get(k); if (r) keysHeld.delete(r);
+});
+addEventListener('blur', () => { keysHeld.clear(); arrows.clear(); swirlHeld = false; });
+
+/* ---------------- toolbar ---------------- */
+let toastT = 0;
+function toast(html){ const t = $('#toast'); t.innerHTML = html; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800); }
+const tools = { bow: $('#tBow'), mallet: $('#tMallet'), ball: $('#tBall') };
+const toolSay = {
+  bow: '<b>Bow</b>: drag across the rods. Faster is louder; push hard and the overtone squeals',
+  mallet: '<b>Mallet</b>: tap a rod, sweep across them, or knock the belly',
+  ball: '<b>Superball</b>: rub the belly for the deep moans, or squeak a rod'
+};
+function setTool(t){ tool = t; for (const k in tools) tools[k].setAttribute('aria-pressed', k === t); toast(toolSay[t]); }
+for (const k in tools) tools[k].onclick = () => setTool(k);
+$('#bSwirl').onclick = () => { wake(); audio(); swirlUntil = clock + 5; toast('<b>Swirl</b>: the water sloshes round, and every note bends with it'); };
+$('#bHaunt').onclick = e => { haunt = !haunt; e.currentTarget.setAttribute('aria-pressed', haunt); wake(); audio(); hauntNext = clock + .2; toast(haunt ? '<b>Haunt</b>: it plays itself, the way it sounds in horror films' : 'Haunt off'); };
+$('#bWater').onclick = e => {
+  xray = !xray; e.currentTarget.setAttribute('aria-pressed', xray);
+  steel.transparent = xray; steel.opacity = xray ? .16 : 1; steel.depthWrite = !xray; steel.needsUpdate = true;
+  [pan, neck, mouth].forEach(m => m.renderOrder = xray ? 2 : 0);
+  toast(xray ? '<b>See water</b>: tilt the neck and watch it slosh' : 'Steel back on');
+};
+$('#bCave').onclick = e => {
+  cave = !cave; e.currentTarget.setAttribute('aria-pressed', cave);
+  if (ctx){ A.conv.buffer = cave ? A.irCave : A.irRoom; A.rev.gain.setTargetAtTime(cave ? .9 : .5, ctx.currentTime, .2); A.dlySend.gain.setTargetAtTime(cave ? .22 : 0, ctx.currentTime, .2); }
+  toast(cave ? '<b>Cavern</b>: nine seconds of echo' : 'Back in the room');
+};
+$('#bSound').onclick = e => { soundOn = !soundOn; e.currentTarget.setAttribute('aria-pressed', soundOn); if (ctx) A.out.gain.setTargetAtTime(soundOn ? 1 : 0, ctx.currentTime, .05); };
+if (window.DeviceOrientationEvent && matchMedia('(pointer:coarse)').matches){
+  const b = $('#bGyro'); b.hidden = false;
+  b.onclick = async () => {
+    if (!gyro && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      try { if (await DeviceOrientationEvent.requestPermission() !== 'granted') return; } catch (_) { return; }
+    }
+    gyro = !gyro; b.setAttribute('aria-pressed', gyro); if (!gyro) gyroT = null;
+    audio(); toast(gyro ? '<b>Tilt phone</b>: tip your phone to slosh the water' : 'Tilt off');
+  };
+  addEventListener('deviceorientation', e => {
+    if (!gyro || e.beta == null) return;
+    const sx = clamp((e.gamma || 0) / 60, -1, 1) * .5, sy = clamp(((e.beta || 0) - 40) / 60, -1, 1) * .5;
+    gyroT = { sx, sy };
+  });
+}
+let started = false;
+function wake(){ if (started) return; started = true; $('#start span').style.opacity = 0; }
+
+/* ---------------- haunt: it plays itself ---------------- */
+let hauntNext = 0, moanAuto = null;
+function hauntStep(){
+  const c = rnd();
+  if (c < .55){
+    const n = rnd() < .35 ? 2 : 1;
+    for (let k = 0; k < n; k++){
+      const r = rods[Math.floor(rnd() * N)];
+      r.auto = { t0: clock + k * (.3 + rnd()), dur: 1.6 + rnd() * 3.6, peak: .3 + rnd() * .5, sb: rnd() < .15 };
+    }
+  } else if (c < .7) swirlUntil = clock + 2.5 + rnd() * 2;
+  else if (c < .85) moanAuto = { t0: clock, dur: 2 + rnd() * 2.5, f0: rnd(), f1: rnd() };
+  else {
+    const n = 2 + Math.floor(rnd() * 5), start = Math.floor(rnd() * N), dir = rnd() < .5 ? 1 : -1;
+    for (let k = 0; k < n; k++) setTimeout(() => strike(rods[(start + dir * k + N) % N], .25 + rnd() * .35), k * (70 + rnd() * 90));
+  }
+  hauntNext = clock + .9 + rnd() * 2.4;
+}
+
+/* ---------------- loop ---------------- */
+let clock = 0, last = performance.now(), moanE = 0, moanF = 90, moanD = 0;
+const Wprev = { x: 0, z: 0 };
+const cBow = new THREE.Color(0x7fe9ff), cHit = new THREE.Color(0xffb366), cTmp = new THREE.Color();
+
+if (THUMB){                                     // a frozen, posed moment for the index thumbnail
+  T.x = .14; T.z = .06; W.x = .3; W.z = .12;
+  [3, 9, 14, 22, 27].forEach((i, k) => { rods[i].E = .5 + k * .12; });
+  [6, 18].forEach(i => { rods[i].se = .8; rods[i].warm = 1; });
+  ripple(3, 2, .4);
+}
+
+function frame(now){
+  let dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (THUMB) dt = 0;
+  clock += dt;
+
+  /* tilt target: neck, arrows, phone, swirl */
+  const { right, toward } = screenDir();
+  let tx = Tt.x, tz = Tt.z;
+  if (arrows.size){
+    const ax = (arrows.has('ArrowRight') ? 1 : 0) - (arrows.has('ArrowLeft') ? 1 : 0);
+    const ay = (arrows.has('ArrowDown') ? 1 : 0) - (arrows.has('ArrowUp') ? 1 : 0);
+    tx += (right.x * ax + toward.x * ay) * .35; tz += (right.z * ax + toward.z * ay) * .35;
+  }
+  if (gyroT){ tx += right.x * gyroT.sx + toward.x * gyroT.sy; tz += right.z * gyroT.sx + toward.z * gyroT.sy; }
+  if (swirlHeld || clock < swirlUntil){ const a = clock * Math.PI * 2 * 1.1; tx += Math.cos(a) * .2; tz += Math.sin(a) * .2; }
+  if (dt > 0){
+    // the hands: a stiff, well-damped spring
+    const w = 9, z = .8;
+    Tv.x += (w * w * (tx - T.x) - 2 * z * w * Tv.x) * dt; Tv.z += (w * w * (tz - T.z) - 2 * z * w * Tv.z) * dt;
+    T.x += Tv.x * dt; T.z += Tv.z * dt;
+    // the water: a lightly damped slosh, ~1.15 Hz
+    const w0 = Math.PI * 2 * 1.15, zw = .05;
+    Wprev.x = W.x; Wprev.z = W.z;
+    Wv.x += (-w0 * w0 * (W.x - T.x) - 2 * zw * w0 * Wv.x) * dt; Wv.z += (-w0 * w0 * (W.z - T.z) - 2 * zw * w0 * Wv.z) * dt;
+    W.x += Wv.x * dt; W.z += Wv.z * dt;
+    const m = Math.hypot(W.x, W.z); if (m > .75){ W.x *= .75 / m; W.z *= .75 / m; }
+  }
+  inst.rotation.set(T.z, 0, -T.x);
+  inst.position.y = PIVOT + 2.6 + Math.sin(clock * .7) * .25;
+  const wspeed = Math.hypot(Wv.x, Wv.z), slosh = Math.hypot(W.x - T.x, W.z - T.z);
+
+  /* gather what is driving each rod */
+  for (const r of rods){ r.dTarget = 0; r.touched = false; r.sbNow = 0; }
+  for (const p of ptrs.values()){
+    p.d += (clamp(Math.pow(Math.max(0, p.acc / Math.max(dt, 1e-3) - 15) / 900, .8), 0, 1) - p.d) * (1 - Math.exp(-dt / .07));
+    p.acc = 0;
+    if (p.kind === 'bow' && p.rod && p.lost < .15){
+      const r = p.rod; r.touched = true; r.dTarget = Math.max(r.dTarget, p.d); if (p.sb) r.sbNow = 1;
+    }
+    if (p.kind === 'moan') moanD = Math.max(moanD, p.lost ? 0 : p.d);
+  }
+  for (const r of keysHeld){ r.touched = true; r.dTarget = Math.max(r.dTarget, .55); if (r.sbKey) r.sbNow = 1; }
+  if (haunt && clock > hauntNext) hauntStep();
+  for (const r of rods){
+    if (!r.auto) continue;
+    const u = (clock - r.auto.t0) / r.auto.dur;
+    if (u < 0) continue;
+    if (u > 1){ r.auto = null; continue; }
+    r.dTarget = Math.max(r.dTarget, Math.pow(Math.sin(Math.PI * u), 1.4) * r.auto.peak); if (r.auto.sb) r.sbNow = 1;
+  }
+
+  /* rods: energy, pitch, sound, sight */
+  let total = 0;
+  const t = ctx ? ctx.currentTime : 0;
+  for (const r of rods){
+    if (dt > 0){
+      r.dr += (r.dTarget - r.dr) * (1 - Math.exp(-dt / .07));
+      if (r.dr > r.E) r.E += (r.dr - r.E) * (1 - Math.exp(-dt / (.3 - .16 * r.dr)));   // a bowed rod takes a moment to speak
+      else if (r.touched) r.E += (r.dr - r.E) * (1 - Math.exp(-dt / .45));          // the resting bow damps it
+      else r.E *= Math.exp(-dt / (r.tau0 * .55));
+      r.se *= Math.exp(-dt / r.tau0);
+      r.sb += (r.sbNow - r.sb) * (1 - Math.exp(-dt / .1));
+      r.warm *= Math.exp(-dt / 1.2);
+    }
+    // the water pooled on this rod's side of the belly bends it; the slosh makes it wander
+    r.cents = 330 * (W.x * r.cx + W.z * r.sz) + 120 * slosh * Math.sin(2 * r.phi + clock * .6);
+    if (ctx && r.v){
+      const v = r.v, E = r.E, sb = r.sb;
+      const bt = [E * .34 * (1 - .55 * sb), E * .28 * (1 - .55 * sb), E * (.03 + .4 * Math.max(0, r.dr - .55)), E * .012];
+      v.bG.forEach((g, k) => g.gain.setTargetAtTime(bt[k], t, .035));
+      v.n1.gain.setTargetAtTime(E * (.55 + 2.4 * sb), t, .035);
+      v.n2.gain.setTargetAtTime(E * (.18 + .9 * sb), t, .035);
+      v.oscs.forEach(o => o.detune.setTargetAtTime(r.cents, t, .05));
+      v.bp1.detune.setTargetAtTime(r.cents, t, .05); v.bp2.detune.setTargetAtTime(r.cents, t, .05);
+      if (E < 2e-4 && r.se < 2e-4 && !r.touched){ r.idle += dt; if (r.idle > .8) freeVoice(r); } else r.idle = 0;
+    } else if (ctx && r.E > .002) voice(r);
+    const e = r.E + r.se * .55; total += e;
+    const wob = Math.min(.04, e * .03);
+    const vf = 7 + (r.i % 6);
+    r.w.rotation.x = wob * Math.sin(clock * vf * 6.283 + r.ph); r.w.rotation.z = wob * .6 * Math.cos(clock * vf * 5.1 + r.ph);
+    const glow = Math.min(1, e) * .22 + (r === hovered ? .05 : 0);
+    const mix = r.se * r.warm / (r.se * r.warm + r.E + 1e-4);
+    cTmp.copy(cBow).lerp(cHit, mix);
+    r.m.emissive.copy(cTmp).multiplyScalar(glow);
+    r.halo.material.color.copy(cTmp);
+    r.halo.material.opacity = Math.min(.7, e * .6);
+    r.halo.scale.setScalar(2 + Math.min(3.5, e * 3));
+  }
+
+  /* superball moans */
+  if (!ptrs.size || ![...ptrs.values()].some(p => p.kind === 'moan')) moanD *= Math.exp(-dt / .08);
+  let moanTarget = moanD, moanFT = 70 + 100 * (([...ptrs.values()].find(p => p.kind === 'moan') || {}).rad || 7) / 14 + 170 * moanD;
+  if (moanAuto){
+    const u = (clock - moanAuto.t0) / moanAuto.dur;
+    if (u > 1) moanAuto = null;
+    else { moanTarget = Math.max(moanTarget, Math.sin(Math.PI * u) * .7); moanFT = 70 + 160 * (moanAuto.f0 + (moanAuto.f1 - moanAuto.f0) * u); }
+  }
+  moanE += (moanTarget - moanE) * (1 - Math.exp(-dt / (moanTarget > moanE ? .12 : .3)));
+  moanF += (moanFT - moanF) * (1 - Math.exp(-dt / .2));
+  if (ctx){
+    const wf = waterFactor();
+    A.mg.gain.setTargetAtTime(moanE * .55, t, .04);
+    A.sqg.gain.setTargetAtTime(moanE * moanE * .5, t, .04);
+    A.mo.frequency.setTargetAtTime(moanF * (1 + .05 * W.x), t, .05);
+    A.moanBank.forEach(b => b.bp.frequency.setTargetAtTime(b.f * wf, t, .06));
+    A.body.forEach(b => b.bp.frequency.setTargetAtTime(b.f * wf, t, .06));
+    A.wg.gain.setTargetAtTime(Math.min(.35, wspeed * .22) * (.4 + slosh), t, .05);
+    A.wbp.frequency.setTargetAtTime(300 + 900 * Math.min(1, wspeed), t, .08);
+    if (Math.random() < wspeed * dt * 5) bubble();
+  }
+  total += moanE;
+
+  /* the water surface */
+  for (const rp of ripples) rp.t += dt;
+  while (ripples.length && ripples[0].t > 4) ripples.shift();
+  const pa = waterGeo.attributes.position;
+  for (let i = 0; i < pa.count; i++){
+    const x = waterBase[i * 3], z = waterBase[i * 3 + 2];
+    let h = W.x * x + W.z * z;
+    for (const rp of ripples){
+      const d = Math.hypot(x - rp.x, z - rp.z), front = rp.t * 9;
+      const k = d - front; if (k > 3 || k < -12) continue;
+      h += rp.a * Math.exp(-rp.t * 1.1) * Math.sin(k * 1.6) * Math.exp(-k * k / 14);
+    }
+    h += Math.sin(x * .7 + clock * 2.1) * Math.cos(z * .6 - clock * 1.7) * .04 * (.3 + wspeed);
+    pa.setY(i, clamp(h, -1.6, 2.2));
+  }
+  pa.needsUpdate = true; waterGeo.computeVertexNormals();
+
+  /* the bow, drawn on the first bowing pointer */
+  const bp = [...ptrs.values()].find(p => p.kind === 'bow' && p.rod && !p.sb);
+  bowFade += ((bp ? 1 : 0) - bowFade) * (1 - Math.exp(-dt / .08));
+  if (bp){
+    const f = bowFrame(bp.rod, bp.h);
+    const x = new THREE.Vector3().crossVectors(f.rad, f.tan);
+    bow.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, f.rad, f.tan));
+    bow.position.copy(f.c).addScaledVector(f.tan, -bp.s);
+  }
+  bow.visible = bowFade > .05;
+  bow.scale.setScalar(.75 * (.6 + .4 * bowFade));
+
+  pool.material.opacity = Math.min(.45, total * .06);
+  dust.rotation.y = clock * .01; dust.position.y = Math.sin(clock * .2) * .6;
+
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
